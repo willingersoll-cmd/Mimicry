@@ -505,7 +505,14 @@ function JourneyGallery({
   );
 }
 
-export function VibeCheckDashboard() {
+export function VibeCheckDashboard({
+  mode = 'create',
+  sessionId,
+}: {
+  mode?: 'create' | 'view';
+  sessionId?: string;
+}) {
+  const isViewMode = mode === 'view';
   const [url, setUrl] = useState('');
   const [task, setTask] = useState('');
   const [userContext, setUserContext] = useState('');
@@ -518,10 +525,54 @@ export function VibeCheckDashboard() {
     actions: [],
     screenshots: [],
   });
+  const [viewLoading, setViewLoading] = useState(isViewMode);
+  const [viewError, setViewError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const savedSessionRef = useRef(false);
   const [hoveredActionIndex, setHoveredActionIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!isViewMode || !sessionId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/tests/${sessionId}`);
+        if (!res.ok) {
+          throw new Error('Test session not found');
+        }
+        const data = await res.json();
+        if (cancelled) return;
+
+        setUrl(data.url ?? '');
+        setTask(data.task ?? '');
+        setAgentState({
+          isRunning: false,
+          isCompleted: true,
+          currentUrl: data.url ?? '',
+          task: data.task ?? '',
+          actions: Array.isArray(data.actions) ? data.actions : [],
+          screenshots: Array.isArray(data.screenshots) ? data.screenshots : [],
+          startedAt: data.startedAt,
+          traceId: data.id,
+          telemetrySummary: data.telemetrySummary,
+        });
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setViewError(error instanceof Error ? error.message : 'Failed to load test session');
+        }
+      } finally {
+        if (!cancelled) setViewLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isViewMode, sessionId]);
+
+  useEffect(() => {
+    if (isViewMode) return;
     const taskText = task.trim();
     if (!taskText) {
       setTaskEvaluation(null);
@@ -555,7 +606,54 @@ export function VibeCheckDashboard() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [task, apiKey]);
+  }, [task, apiKey, isViewMode]);
+
+  useEffect(() => {
+    if (isViewMode || !agentState.isCompleted || savedSessionRef.current) return;
+    if (!agentState.traceId || !url.trim() || !task.trim()) return;
+
+    savedSessionRef.current = true;
+
+    const actions = agentState.actions;
+    const count = actions.length || 1;
+    const avgDifficulty =
+      actions.reduce((sum, a) => sum + (a.difficultyScore ?? 0), 0) / count;
+    const difficultyPercent = clamp(avgDifficulty, 0, 999);
+    const thumbnails = agentState.screenshots
+      .slice(0, 2)
+      .map((s) => s.screenshot)
+      .filter(Boolean);
+
+    void fetch('/api/tests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: agentState.traceId,
+        task,
+        url,
+        startedAt: agentState.startedAt ?? new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        difficultyPercent,
+        thumbnailData: thumbnails,
+        actions: agentState.actions,
+        screenshots: agentState.screenshots,
+        telemetrySummary: agentState.telemetrySummary,
+      }),
+    }).catch((error) => {
+      console.error('Failed to save test session:', error);
+      savedSessionRef.current = false;
+    });
+  }, [
+    isViewMode,
+    agentState.isCompleted,
+    agentState.traceId,
+    agentState.actions,
+    agentState.screenshots,
+    agentState.startedAt,
+    agentState.telemetrySummary,
+    task,
+    url,
+  ]);
 
   const handleStart = async () => {
     if (!url.trim() || !task.trim()) {
@@ -712,14 +810,20 @@ export function VibeCheckDashboard() {
     const count = actions.length || 1;
     const avgDifficulty = actions.reduce((sum, a) => sum + (a.difficultyScore ?? 0), 0) / count;
     const startedAt = agentState.startedAt ? new Date(agentState.startedAt).getTime() : null;
-    const now = Date.now();
-    const elapsedSec = startedAt ? Math.max(0, (now - startedAt) / 1000) : 0;
+
+    let elapsedSec = 0;
+    if (agentState.telemetrySummary?.tTotalMs) {
+      elapsedSec = agentState.telemetrySummary.tTotalMs / 1000;
+    } else if (startedAt) {
+      elapsedSec = Math.max(0, (Date.now() - startedAt) / 1000);
+    }
+
     return {
       totalTokens,
       overallDifficulty: clamp(avgDifficulty, 0, 999),
       elapsedSec,
     };
-  }, [agentState.actions, agentState.startedAt]);
+  }, [agentState.actions, agentState.startedAt, agentState.telemetrySummary]);
 
   const hasFailed = !!agentState.error && !agentState.isRunning && !agentState.isCompleted;
   const failureExplanation = agentState.error?.replace(/^Action failed:\s*/i, '').trim();
@@ -736,10 +840,35 @@ export function VibeCheckDashboard() {
       ? failureExplanation
       : agentState.isCompleted
         ? 'the agent has finished the task'
-        : 'click "start testing" to start the agent';
+        : isViewMode
+          ? 'viewing saved test results'
+          : 'click "start testing" to start the agent';
+
+  if (isViewMode && viewLoading) {
+    return <p className="text-sm text-gray-400">Loading test results…</p>;
+  }
+
+  if (isViewMode && viewError) {
+    return (
+      <div>
+        <p className="text-[#FCA5A5] text-sm">{viewError}</p>
+        <a href="/" className="inline-block mt-4 text-sm text-accent hover:opacity-90">
+          ← Back to home
+        </a>
+      </div>
+    );
+  }
+
+  const inputsDisabled = isViewMode || agentState.isRunning;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[401px_1fr] gap-6 font-normal">
+    <div className="font-normal">
+      {isViewMode && (
+        <a href="/" className="inline-block mb-6 text-sm text-gray-400 hover:text-foreground transition-colors">
+          ← Back to home
+        </a>
+      )}
+    <div className="grid grid-cols-1 lg:grid-cols-[401px_1fr] gap-6">
       {/* Left Side - Prompt inputs */}
       <div className="bg-[#1F1F20] p-6">
         <div className="flex items-start justify-between gap-4">
@@ -765,7 +894,7 @@ export function VibeCheckDashboard() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
               className="w-full px-4 py-3 border border-[#3E3E41] bg-[#28282B] text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-              disabled={agentState.isRunning}
+              disabled={inputsDisabled}
             />
           </div>
 
@@ -780,7 +909,7 @@ export function VibeCheckDashboard() {
               placeholder="Try to sign up for a newsletter"
               rows={5}
               className="w-full px-4 py-3 border border-[#3E3E41] bg-[#28282B] text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none"
-              disabled={agentState.isRunning}
+              disabled={inputsDisabled}
             />
             {taskEvaluation?.isBareBones && (
               <div className="mt-3 bg-[#2A1518] border border-[#7F1D1D] p-4">
@@ -803,7 +932,7 @@ export function VibeCheckDashboard() {
               placeholder="Optional context (persona, constraints, device, etc.)"
               rows={5}
               className="w-full px-4 py-3 border border-[#3E3E41] bg-[#28282B] text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none"
-              disabled={agentState.isRunning}
+              disabled={inputsDisabled}
             />
           </div>
 
@@ -819,10 +948,11 @@ export function VibeCheckDashboard() {
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Optional — falls back to the server key if blank"
               className="w-full px-4 py-3 border border-[#3E3E41] bg-[#28282B] text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-              disabled={agentState.isRunning}
+              disabled={inputsDisabled}
             />
           </div>
 
+          {!isViewMode && (
           <div className="flex gap-3">
             <button
               type="button"
@@ -849,8 +979,9 @@ export function VibeCheckDashboard() {
               </button>
             )}
           </div>
+          )}
 
-          {agentState.error && agentState.isRunning && (
+          {!isViewMode && agentState.error && agentState.isRunning && (
             <div className="bg-[#2A1518] border border-[#7F1D1D] p-4">
               <p className="text-[#FCA5A5] text-sm">{agentState.error}</p>
             </div>
@@ -927,6 +1058,7 @@ export function VibeCheckDashboard() {
           <JourneyGallery screenshots={agentState.screenshots} actions={agentState.actions} />
         </div>
       </div>
+    </div>
     </div>
   );
 }

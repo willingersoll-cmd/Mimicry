@@ -95,23 +95,26 @@ export function StatusIcon({
   isRunning,
   isCompleted = false,
   isFailed = false,
+  size = 48,
 }: {
   isRunning: boolean;
   isCompleted?: boolean;
   isFailed?: boolean;
+  size?: number;
 }) {
   const bgFill = isFailed ? ERROR_BG : isRunning || isCompleted ? ACTIVE_BG : IDLE_BG;
 
   return (
     <div
-      className={`flex h-12 w-12 shrink-0 items-center justify-center ${
+      className={`flex shrink-0 items-center justify-center ${
         isFailed ? 'bg-[#2A1518]' : isRunning || isCompleted ? 'bg-[#1F1F20]' : 'bg-[#141415]'
       }`}
+      style={{ width: size, height: size }}
       aria-hidden
     >
       <svg
-        width="48"
-        height="48"
+        width={size}
+        height={size}
         viewBox="0 0 48 48"
         fill="none"
         className="overflow-visible"

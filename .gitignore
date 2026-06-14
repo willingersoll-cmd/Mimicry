@@ -41,6 +41,10 @@ next-env.d.ts
 # GOMS trace persistence (PRD)
 /data/traces/*.jsonl
 
+# Saved test sessions (home page)
+/data/tests/**
+!data/tests/.gitkeep
+
 # playwright
 /test-results/
 /playwright-report/
