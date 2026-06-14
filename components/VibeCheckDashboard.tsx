@@ -572,7 +572,7 @@ export function VibeCheckDashboard() {
 
       {/* Right Side - Analytics + actions + journey */}
       <div className="min-w-0">
-        <div className="bg-[#28282B] p-6">
+        <div className="bg-[#28282B] p-6 xl:px-16">
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_359px] gap-8 items-start xl:items-stretch">
             {/* Main */}
             <div className="min-w-0 w-full max-w-[772px] space-y-6 self-start">
