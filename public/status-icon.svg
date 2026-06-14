@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Pixel robot from Figma node 89:225 (Mimicry) -->
+  <!-- Antenna spark -->
+  <rect x="21" y="6" width="3" height="3" fill="#9DABDD"/>
+  <rect x="24" y="6" width="3" height="3" fill="#9DABDD"/>
+  <rect x="27" y="6" width="3" height="3" fill="#9DABDD"/>
+  <rect x="27" y="9" width="3" height="3" fill="#9DABDD"/>
+  <!-- Antenna -->
+  <rect x="24" y="9" width="3" height="3" fill="#9DABDD"/>
+  <rect x="24" y="12" width="3" height="3" fill="#9DABDD"/>
+  <rect x="24" y="15" width="3" height="3" fill="#9DABDD"/>
+  <!-- Body -->
+  <rect x="15" y="18" width="18" height="3" fill="#9DABDD"/>
+  <rect x="12" y="21" width="24" height="3" fill="#9DABDD"/>
+  <rect x="12" y="24" width="6" height="3" fill="#9DABDD"/>
+  <rect x="21" y="24" width="6" height="3" fill="#9DABDD"/>
+  <rect x="30" y="24" width="6" height="3" fill="#9DABDD"/>
+  <rect x="12" y="27" width="24" height="3" fill="#9DABDD"/>
+  <rect x="15" y="30" width="18" height="3" fill="#9DABDD"/>
+  <!-- Eyes -->
+  <rect x="18" y="21" width="3" height="3" fill="#141415"/>
+  <rect x="27" y="21" width="3" height="3" fill="#141415"/>
+  <!-- Wheels -->
+  <circle cx="16" cy="38" r="4" fill="#C8CDD8"/>
+  <circle cx="16" cy="38" r="1.5" fill="#141415"/>
+  <circle cx="24" cy="38" r="4" fill="#C8CDD8"/>
+  <circle cx="24" cy="38" r="1.5" fill="#141415"/>
+  <circle cx="32" cy="38" r="4" fill="#C8CDD8"/>
+  <circle cx="32" cy="38" r="1.5" fill="#141415"/>
+</svg>
