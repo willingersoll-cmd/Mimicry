@@ -54,6 +54,34 @@ export async function navigateToUrl(page: Page, url: string): Promise<void> {
   }
 }
 
+/** Lightweight DOM signal counts captured at action time. */
+export interface DomSignals {
+  buttons: number;
+  links: number;
+  inputs: number;
+  clickable: number;
+}
+
+/**
+ * Count interactive targets currently in the DOM. Used by the effort model to
+ * estimate pointing/clutter cost. Falls back to zeros if evaluation fails.
+ */
+export async function captureDomSignals(page: Page): Promise<DomSignals> {
+  try {
+    return await page.evaluate(() => {
+      const count = (sel: string) => document.querySelectorAll(sel).length;
+      const buttons = count(
+        'button, input[type="submit"], input[type="button"], [role="button"]'
+      );
+      const links = count('a[href]');
+      const inputs = count('input:not([type="hidden"]), textarea, select');
+      return { buttons, links, inputs, clickable: buttons + links };
+    });
+  } catch {
+    return { buttons: 0, links: 0, inputs: 0, clickable: 0 };
+  }
+}
+
 export async function closeBrowser(): Promise<void> {
   if (browserInstance) {
     await browserInstance.close();

@@ -3,7 +3,8 @@
 const BODY = '#9DABDD';
 const WHEEL = '#C8CDD8';
 const IDLE_BG = '#141415';
-const RUNNING_BG = 'rgb(65 47 198 / 0.2)';
+const ACTIVE_BG = '#1F1F20';
+const ERROR_BG = '#2A1518';
 
 function Wheel({
   cx,
@@ -31,7 +32,17 @@ function Wheel({
   );
 }
 
-function PixelRobot({ holeFill, isRunning }: { holeFill: string; isRunning: boolean }) {
+function PixelRobot({
+  holeFill,
+  isRunning,
+  isCompleted,
+  isFailed,
+}: {
+  holeFill: string;
+  isRunning: boolean;
+  isCompleted: boolean;
+  isFailed: boolean;
+}) {
   return (
     <>
       <g className={isRunning ? 'status-robot-body status-robot-body--running' : undefined}>
@@ -53,8 +64,24 @@ function PixelRobot({ holeFill, isRunning }: { holeFill: string; isRunning: bool
         <rect x="12" y="27" width="24" height="3" fill={BODY} />
         <rect x="15" y="30" width="18" height="3" fill={BODY} />
         {/* Eyes */}
-        <rect x="18" y="21" width="3" height="3" fill={IDLE_BG} />
-        <rect x="27" y="21" width="3" height="3" fill={IDLE_BG} />
+        <rect x="18" y="21" width="3" height="3" fill={holeFill} />
+        <rect x="27" y="21" width="3" height="3" fill={holeFill} />
+        {isCompleted && (
+          <>
+            {/* Happy smile */}
+            <rect x="18" y="27" width="3" height="3" fill={holeFill} />
+            <rect x="21" y="30" width="6" height="3" fill={holeFill} />
+            <rect x="27" y="27" width="3" height="3" fill={holeFill} />
+          </>
+        )}
+        {isFailed && (
+          <>
+            {/* Sad mouth */}
+            <rect x="18" y="30" width="3" height="3" fill={holeFill} />
+            <rect x="21" y="27" width="6" height="3" fill={holeFill} />
+            <rect x="27" y="30" width="3" height="3" fill={holeFill} />
+          </>
+        )}
       </g>
       {/* Wheels */}
       <Wheel cx={16} holeFill={holeFill} isRunning={isRunning} />
@@ -64,13 +91,21 @@ function PixelRobot({ holeFill, isRunning }: { holeFill: string; isRunning: bool
   );
 }
 
-export function StatusIcon({ isRunning }: { isRunning: boolean }) {
-  const bgFill = isRunning ? RUNNING_BG : IDLE_BG;
+export function StatusIcon({
+  isRunning,
+  isCompleted = false,
+  isFailed = false,
+}: {
+  isRunning: boolean;
+  isCompleted?: boolean;
+  isFailed?: boolean;
+}) {
+  const bgFill = isFailed ? ERROR_BG : isRunning || isCompleted ? ACTIVE_BG : IDLE_BG;
 
   return (
     <div
       className={`flex h-12 w-12 shrink-0 items-center justify-center ${
-        isRunning ? 'bg-accent/20' : 'bg-[#141415]'
+        isFailed ? 'bg-[#2A1518]' : isRunning || isCompleted ? 'bg-[#1F1F20]' : 'bg-[#141415]'
       }`}
       aria-hidden
     >
@@ -81,7 +116,12 @@ export function StatusIcon({ isRunning }: { isRunning: boolean }) {
         fill="none"
         className="overflow-visible"
       >
-        <PixelRobot holeFill={bgFill} isRunning={isRunning} />
+        <PixelRobot
+          holeFill={bgFill}
+          isRunning={isRunning}
+          isCompleted={isCompleted}
+          isFailed={isFailed}
+        />
       </svg>
       <style jsx global>{`
         .status-robot-body--running {

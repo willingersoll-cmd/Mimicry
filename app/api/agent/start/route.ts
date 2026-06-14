@@ -8,18 +8,20 @@ import { computeSessionTotals, type GomsTelemetryEvent } from '@/lib/gomsTelemet
 export const maxDuration = 300; // 5 minutes for Vercel
 
 export async function POST(request: NextRequest) {
+  const { url, task, apiKey } = await request.json();
+
+  const userKey = typeof apiKey === 'string' ? apiKey.trim() : '';
   const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY?.trim();
-  if (!hasOpenAI && !hasAnthropic) {
+  if (!userKey && !hasOpenAI && !hasAnthropic) {
     return new Response(
       JSON.stringify({
-        error: 'Add OPENAI_API_KEY or ANTHROPIC_API_KEY to .env.local and restart the dev server.',
+        error:
+          'Enter an API key above, or add OPENAI_API_KEY / ANTHROPIC_API_KEY to .env.local and restart the dev server.',
       }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
-
-  const { url, task } = await request.json();
 
   if (!url || !task) {
     return new Response(
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       try {
         const userThreshold =
           Number(process.env.USER_TOKEN_THRESHOLD) ||
-          2000; // keep in sync with DEFAULT_TOKEN_THRESHOLD in lib/agent.ts
+          4000; // keep in sync with DEFAULT_TOKEN_THRESHOLD in lib/agent.ts
 
         // Create page and navigate
         page = await createPage();
@@ -81,6 +83,7 @@ export async function POST(request: NextRequest) {
           },
           {
             traceId,
+            apiKey: userKey || undefined,
             onTelemetry: async (event) => {
               telemetryBuffer.push(event);
               send({ type: 'telemetry', event });

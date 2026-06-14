@@ -8,11 +8,18 @@ import { join } from 'path';
 
 export type GomsOperatorCode = 'K' | 'P' | 'H' | 'D' | 'M' | 'R';
 
+/**
+ * NOTE: These operator codes describe low-level API/timing PHASES of a vision
+ * step (request init, target acquisition, generation, etc.). They are distinct
+ * from the human-behavior effort buckets in lib/gomsEffortModel.ts
+ * (thinking / pointing / typing / homing / waiting), which are what the
+ * dashboard renders. The telemetry stream is timing instrumentation only.
+ */
 export const OPERATOR_LABELS: Record<GomsOperatorCode, string> = {
-  K: 'API Request Initiation (Keystroke)',
-  P: 'Target Acquisition / Indexing (Pointing)',
-  H: 'Context Switching (Homing)',
-  D: 'Token Stream Generation (Drawing)',
+  K: 'API Request Initiation',
+  P: 'Target Acquisition / Indexing',
+  H: 'Context Switching',
+  D: 'Token Stream Generation',
   M: 'Mental Preparation (CoT)',
   R: 'TTFT / Network Wait (Response)',
 };

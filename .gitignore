@@ -35,6 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# effort-model calibration build output
+/.calib/
+
 # GOMS trace persistence (PRD)
 /data/traces/*.jsonl
 
