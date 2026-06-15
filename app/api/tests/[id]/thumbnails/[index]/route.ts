@@ -9,14 +9,14 @@ export async function GET(
     return new Response('Invalid thumbnail index', { status: 400 });
   }
 
-  const buffer = await getTestThumbnail(params.id, index);
-  if (!buffer) {
+  const thumbnail = await getTestThumbnail(params.id, index);
+  if (!thumbnail) {
     return new Response('Thumbnail not found', { status: 404 });
   }
 
-  return new Response(new Uint8Array(buffer), {
+  return new Response(new Uint8Array(thumbnail.buffer), {
     headers: {
-      'Content-Type': 'image/png',
+      'Content-Type': thumbnail.contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });

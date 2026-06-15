@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AgentProgress } from './AgentProgress';
 import { StatusIcon } from './StatusIcon';
 import { ActionTypeIcon } from './ActionTypeIcon';
+import { computeDifficultyPercent } from '@/lib/computeDifficulty';
+import { isPlaceholderScreenshot } from '@/lib/screenshotUtils';
 
 export interface ActionEffort {
   thinking: number;
@@ -135,10 +137,6 @@ export interface AgentState {
     totalCostUsd: number;
   };
   error?: string;
-}
-
-function clamp(n: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, n));
 }
 
 function formatHostish(url: string) {
@@ -457,7 +455,10 @@ function JourneyGallery({
           <div className="flex gap-5 min-w-max">
             <AnimatePresence initial={false}>
             {pages.map((p) => {
-              const last = p.screenshots[p.screenshots.length - 1];
+              const validScreenshots = p.screenshots.filter(
+                (shot) => !isPlaceholderScreenshot(shot.screenshot)
+              );
+              const last = validScreenshots[validScreenshots.length - 1];
               const label = formatHostish(p.url);
               return (
                 <motion.div
@@ -469,7 +470,7 @@ function JourneyGallery({
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <div className="p-4">
-                    <div className="overflow-hidden bg-black">
+                    <div className="overflow-hidden bg-[#1F1F20]">
                       {last ? (
                         <motion.img
                           key={`${p.url}-${last.timestamp ?? p.screenshots.length}`}
@@ -615,10 +616,7 @@ export function VibeCheckDashboard({
     savedSessionRef.current = true;
 
     const actions = agentState.actions;
-    const count = actions.length || 1;
-    const avgDifficulty =
-      actions.reduce((sum, a) => sum + (a.difficultyScore ?? 0), 0) / count;
-    const difficultyPercent = clamp(avgDifficulty, 0, 999);
+    const difficultyPercent = computeDifficultyPercent(actions);
     const thumbnails = agentState.screenshots
       .slice(0, 2)
       .map((s) => s.screenshot)
@@ -634,6 +632,7 @@ export function VibeCheckDashboard({
         startedAt: agentState.startedAt ?? new Date().toISOString(),
         completedAt: new Date().toISOString(),
         difficultyPercent,
+        apiKey: apiKey.trim() || undefined,
         thumbnailData: thumbnails,
         actions: agentState.actions,
         screenshots: agentState.screenshots,
@@ -653,6 +652,7 @@ export function VibeCheckDashboard({
     agentState.telemetrySummary,
     task,
     url,
+    apiKey,
   ]);
 
   const handleStart = async () => {
@@ -807,8 +807,7 @@ export function VibeCheckDashboard({
   const metrics = useMemo(() => {
     const actions = agentState.actions;
     const totalTokens = actions.reduce((sum, a) => sum + (a.totalTokens ?? 0), 0);
-    const count = actions.length || 1;
-    const avgDifficulty = actions.reduce((sum, a) => sum + (a.difficultyScore ?? 0), 0) / count;
+    const overallDifficulty = computeDifficultyPercent(actions);
     const startedAt = agentState.startedAt ? new Date(agentState.startedAt).getTime() : null;
 
     let elapsedSec = 0;
@@ -820,7 +819,7 @@ export function VibeCheckDashboard({
 
     return {
       totalTokens,
-      overallDifficulty: clamp(avgDifficulty, 0, 999),
+      overallDifficulty,
       elapsedSec,
     };
   }, [agentState.actions, agentState.startedAt, agentState.telemetrySummary]);

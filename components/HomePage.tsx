@@ -46,12 +46,12 @@ export function HomePage() {
   }, []);
 
   return (
-    <div className="flex gap-6 min-h-[calc(100vh-4rem)]">
+    <div className="flex gap-6 min-h-[calc(100vh-4rem)] py-8">
       <div className="w-full max-w-[701px] flex flex-col">
         <header className="flex gap-7 items-start">
           <StatusIcon isRunning={false} size={81} />
-          <div className="min-w-0 pt-1">
-            <h1 className="text-[24px] leading-8 text-foreground">Let&apos;s start testing.</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl leading-8 text-foreground">Let&apos;s start testing.</h1>
             <div className="mt-4">
               <HomeActionButtons />
             </div>
@@ -59,15 +59,15 @@ export function HomePage() {
         </header>
 
         <section className="mt-12 flex-1 min-h-0 flex flex-col">
-          <h2 className="text-[24px] leading-8 text-foreground">
+          <h2 className="text-2xl leading-8 text-foreground">
             {tests.length} Past test{tests.length === 1 ? '' : 's'}
           </h2>
 
           <div className="mt-5 flex-1 overflow-y-auto space-y-4 pr-1">
             {loading ? (
-              <p className="text-sm text-gray-400">Loading past tests…</p>
+              <p className="text-base text-gray-400">Loading past tests…</p>
             ) : tests.length === 0 ? (
-              <p className="text-sm text-gray-400">
+              <p className="text-base text-gray-400">
                 No past tests yet. Run a new test to see results here.
               </p>
             ) : (
